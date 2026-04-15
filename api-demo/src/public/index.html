@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSC 394 — Class Roster API Demo</title>
+  <style>
+    /* ---- Reset & base --------------------------------------------------- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fa; color: #1a1a2e; line-height: 1.6;
+    }
+    /* ---- Layout --------------------------------------------------------- */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff; padding: 1.5rem 2rem; text-align: center;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 600; }
+    header p  { opacity: .8; font-size: .9rem; margin-top: .25rem; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    /* ---- Tabs ----------------------------------------------------------- */
+    .tabs { display: flex; gap: .5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab {
+      padding: .5rem 1.25rem; border: 2px solid #e0e0e0; border-radius: 6px;
+      background: #fff; cursor: pointer; font-size: .9rem; font-weight: 500;
+      transition: all .15s;
+    }
+    .tab:hover { border-color: #0366d6; color: #0366d6; }
+    .tab.active { background: #0366d6; color: #fff; border-color: #0366d6; }
+    /* ---- Panels --------------------------------------------------------- */
+    .panel { display: none; }
+    .panel.active { display: block; }
+    /* ---- Cards ---------------------------------------------------------- */
+    .card {
+      background: #fff; border-radius: 8px; padding: 1.25rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 1rem;
+    }
+    .card h2 { font-size: 1.1rem; margin-bottom: .75rem; color: #16213e; }
+    /* ---- Table ---------------------------------------------------------- */
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid #eee; }
+    th { background: #f9fafb; font-weight: 600; position: sticky; top: 0; }
+    tr:hover td { background: #f0f6ff; }
+    /* ---- Filters -------------------------------------------------------- */
+    .filters { display: flex; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+    .filters select, .filters input {
+      padding: .45rem .6rem; border: 1px solid #ccc; border-radius: 4px;
+      font-size: .85rem;
+    }
+    .filters input { width: 220px; }
+    /* ---- Badge ---------------------------------------------------------- */
+    .badge {
+      display: inline-block; padding: .15rem .5rem; border-radius: 12px;
+      font-size: .75rem; font-weight: 600;
+    }
+    .badge-blue  { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    /* ---- Group cards ---------------------------------------------------- */
+    .group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .group-card {
+      background: #fff; border-radius: 8px; padding: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08); border-left: 4px solid #0366d6;
+    }
+    .group-card h3 { font-size: 1rem; margin-bottom: .25rem; }
+    .group-card .project { color: #666; font-size: .85rem; margin-bottom: .5rem; }
+    .group-card ul { list-style: none; padding: 0; }
+    .group-card li { font-size: .85rem; padding: .15rem 0; }
+    /* ---- API Tester ----------------------------------------------------- */
+    .api-tester { display: flex; gap: .5rem; margin-bottom: .75rem; flex-wrap: wrap; }
+    .api-tester select { width: 100px; }
+    .api-tester input  { flex: 1; min-width: 200px; }
+    .api-tester button {
+      padding: .45rem 1.25rem; background: #0366d6; color: #fff; border: none;
+      border-radius: 4px; cursor: pointer; font-weight: 500;
+    }
+    .api-tester button:hover { background: #0250a3; }
+    textarea.body-input {
+      width: 100%; height: 80px; font-family: 'Consolas', monospace;
+      font-size: .8rem; padding: .5rem; border: 1px solid #ccc; border-radius: 4px;
+      margin-bottom: .5rem; resize: vertical;
+    }
+    .response-meta { font-size: .8rem; color: #666; margin-bottom: .25rem; }
+    pre.response {
+      background: #1a1a2e; color: #a8e6cf; padding: 1rem; border-radius: 6px;
+      overflow-x: auto; font-size: .8rem; max-height: 400px; overflow-y: auto;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    /* ---- cURL box -------------------------------------------------------- */
+    .curl-box {
+      background: #272822; color: #f8f8f2; padding: .75rem 1rem; border-radius: 6px;
+      font-family: 'Consolas', monospace; font-size: .8rem; margin-top: .5rem;
+      overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+    }
+    .curl-label { font-size: .75rem; color: #999; margin-top: .75rem; margin-bottom: .25rem; }
+    /* ---- Quick-action buttons ------------------------------------------- */
+    .quick-actions { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .75rem; }
+    .quick-btn {
+      padding: .3rem .6rem; font-size: .75rem; border: 1px solid #ddd;
+      border-radius: 4px; background: #f9fafb; cursor: pointer;
+    }
+    .quick-btn:hover { background: #e8f0fe; border-color: #0366d6; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>CSC 394 — REST API Demo</h1>
+  <p>Class Roster &amp; Groups · Week 3: API Design and Documentation</p>
+</header>
+
+<div class="container">
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-panel="roster">Class Roster</div>
+    <div class="tab" data-panel="groups">Groups</div>
+    <div class="tab" data-panel="tester">API Tester</div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- PANEL: Roster                                                       -->
+  <!-- ================================================================== -->
+  <div id="roster" class="panel active">
+    <div class="card">
+      <h2>Students</h2>
+      <div class="filters">
+        <select id="filter-group">
+          <option value="">All Groups</option>
+        </select>
+        <select id="filter-role">
+          <option value="">All Roles</option>
+          <option value="developer">Developer</option>
+          <option value="scrum master">Scrum Master</option>
+        </select>
+        <input type="text" id="filter-search" placeholder="Search by name or email…">
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Group</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody id="roster-body"></tbody>
+        </table>
+      </div>
+      <p id="roster-pagination" style="margin-top:.75rem;font-size:.85rem;color:#666"></p>
+    </div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- PANEL: Groups                                                       -->
+  <!-- ================================================================== -->
+  <div id="groups" class="panel">
+    <div class="group-grid" id="groups-grid"></div>
+  </div>
+
+  <!-- ================================================================== -->
+  <!-- PANEL: API Tester                                                   -->
+  <!-- ================================================================== -->
+  <div id="tester" class="panel">
+    <div class="card">
+      <h2>Interactive API Tester</h2>
+      <p style="font-size:.85rem;color:#666;margin-bottom:1rem">
+        Try the endpoints below — this is exactly what tools like <strong>Postman</strong>
+        or <strong>Thunder Client</strong> do under the hood.
+      </p>
+
+      <div class="quick-actions">
+        <button class="quick-btn" data-method="GET" data-url="/api/students" data-body="">GET all students</button>
+        <button class="quick-btn" data-method="GET" data-url="/api/students?groupId=group-1" data-body="">GET Group 1</button>
+        <button class="quick-btn" data-method="GET" data-url="/api/students?role=scrum master" data-body="">GET Scrum Masters</button>
+        <button class="quick-btn" data-method="GET" data-url="/api/students/student-01" data-body="">GET student-01</button>
+        <button class="quick-btn" data-method="GET" data-url="/api/students/student-999" data-body="">GET 404 example</button>
+        <button class="quick-btn" data-method="POST" data-url="/api/students" data-body='{"firstName":"Test","lastName":"User","groupId":"group-1","email":"tuser@depaul.edu"}'>POST new student</button>
+        <button class="quick-btn" data-method="POST" data-url="/api/students" data-body='{"lastName":"NoFirst"}'>POST validation error</button>
+        <button class="quick-btn" data-method="PATCH" data-url="/api/students/student-01" data-body='{"role":"scrum master"}'>PATCH update role</button>
+        <button class="quick-btn" data-method="DELETE" data-url="/api/students/student-34" data-body="">DELETE student-34</button>
+        <button class="quick-btn" data-method="GET" data-url="/api/groups" data-body="">GET all groups</button>
+        <button class="quick-btn" data-method="GET" data-url="/api/groups/group-3/members" data-body="">GET Group 3 members</button>
+        <button class="quick-btn" data-method="GET" data-url="/api/students?page=1&perPage=5" data-body="">GET paginated (5/page)</button>
+        <button class="quick-btn" data-method="GET" data-url="/api/students?sort=firstName&order=asc" data-body="">GET sorted by first name</button>
+        <button class="quick-btn" data-method="GET" data-url="/api/health" data-body="">GET health check</button>
+      </div>
+
+      <div class="api-tester">
+        <select id="req-method">
+          <option>GET</option>
+          <option>POST</option>
+          <option>PATCH</option>
+          <option>PUT</option>
+          <option>DELETE</option>
+        </select>
+        <input type="text" id="req-url" value="/api/students" placeholder="/api/...">
+        <button id="send-btn">Send</button>
+      </div>
+
+      <textarea id="req-body" class="body-input" placeholder='Request body (JSON) — used for POST / PATCH / PUT'></textarea>
+
+      <div class="curl-label">cURL equivalent:</div>
+      <div class="curl-box" id="curl-output">curl http://localhost:3000/api/students</div>
+
+      <div id="response-area" style="margin-top:1rem">
+        <div class="response-meta" id="resp-meta"></div>
+        <pre class="response" id="resp-body">← Click "Send" or a quick-action button</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- JavaScript                                                              -->
+<!-- ====================================================================== -->
+<script>
+const API = '';  // same origin
+
+// ---- Tab switching -------------------------------------------------------
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.panel).classList.add('active');
+  });
+});
+
+// ---- Roster panel --------------------------------------------------------
+async function loadRoster() {
+  const group = document.getElementById('filter-group').value;
+  const role  = document.getElementById('filter-role').value;
+  const search = document.getElementById('filter-search').value;
+
+  const params = new URLSearchParams();
+  if (group)  params.set('groupId', group);
+  if (role)   params.set('role', role);
+  if (search) params.set('search', search);
+  params.set('perPage', '100');
+
+  const res = await fetch(`${API}/api/students?${params}`);
+  const json = await res.json();
+
+  const tbody = document.getElementById('roster-body');
+  tbody.innerHTML = json.data.map(s => `
+    <tr>
+      <td><code>${s.id}</code></td>
+      <td>${s.firstName} ${s.lastName}</td>
+      <td>${s.email || '—'}</td>
+      <td><span class="badge badge-blue">${s.groupId}</span></td>
+      <td><span class="badge ${s.role === 'scrum master' ? 'badge-green' : 'badge-purple'}">${s.role}</span></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('roster-pagination').textContent =
+    `Showing ${json.data.length} of ${json.pagination.total} students`;
+}
+
+async function loadGroupFilter() {
+  const res = await fetch(`${API}/api/groups`);
+  const json = await res.json();
+  const sel = document.getElementById('filter-group');
+  json.data.forEach(g => {
+    const opt = document.createElement('option');
+    opt.value = g.id;
+    opt.textContent = `${g.name} — ${g.project}`;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('filter-group').addEventListener('change', loadRoster);
+document.getElementById('filter-role').addEventListener('change', loadRoster);
+document.getElementById('filter-search').addEventListener('input', loadRoster);
+
+// ---- Groups panel --------------------------------------------------------
+async function loadGroups() {
+  const res = await fetch(`${API}/api/groups`);
+  const groupsJson = await res.json();
+
+  const grid = document.getElementById('groups-grid');
+  grid.innerHTML = '';
+
+  for (const g of groupsJson.data) {
+    const membersRes = await fetch(`${API}/api/groups/${g.id}/members`);
+    const membersJson = await membersRes.json();
+
+    const card = document.createElement('div');
+    card.className = 'group-card';
+    card.innerHTML = `
+      <h3>${g.name}</h3>
+      <div class="project">Project: <strong>${g.project}</strong></div>
+      <ul>
+        ${membersJson.data.map(m =>
+          `<li>${m.firstName} ${m.lastName} ${m.role === 'scrum master' ? '<span class="badge badge-green">SM</span>' : ''}</li>`
+        ).join('')}
+      </ul>
+      <div style="margin-top:.5rem;font-size:.8rem;color:#888">${membersJson.pagination.total} members</div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+// ---- API Tester panel ----------------------------------------------------
+function buildCurl() {
+  const method = document.getElementById('req-method').value;
+  const url = document.getElementById('req-url').value;
+  const body = document.getElementById('req-body').value.trim();
+
+  let curl = `curl -X ${method} http://localhost:3000${url}`;
+  if (body && ['POST', 'PATCH', 'PUT'].includes(method)) {
+    curl += ` \\\n  -H "Content-Type: application/json" \\\n  -d '${body}'`;
+  }
+  document.getElementById('curl-output').textContent = curl;
+}
+
+document.getElementById('req-method').addEventListener('change', buildCurl);
+document.getElementById('req-url').addEventListener('input', buildCurl);
+document.getElementById('req-body').addEventListener('input', buildCurl);
+
+document.getElementById('send-btn').addEventListener('click', async () => {
+  const method = document.getElementById('req-method').value;
+  const url = document.getElementById('req-url').value;
+  const body = document.getElementById('req-body').value.trim();
+
+  const options = { method, headers: {} };
+  if (body && ['POST', 'PATCH', 'PUT'].includes(method)) {
+    options.headers['Content-Type'] = 'application/json';
+    options.body = body;
+  }
+
+  const start = performance.now();
+  try {
+    const res = await fetch(`${API}${url}`, options);
+    const elapsed = Math.round(performance.now() - start);
+    const text = await res.text();
+
+    document.getElementById('resp-meta').textContent =
+      `${res.status} ${res.statusText} · ${elapsed}ms · ${text.length} bytes`;
+
+    let display;
+    try { display = JSON.stringify(JSON.parse(text), null, 2); }
+    catch { display = text || '(empty response)'; }
+
+    document.getElementById('resp-body').textContent = display;
+  } catch (err) {
+    document.getElementById('resp-meta').textContent = 'Network Error';
+    document.getElementById('resp-body').textContent = err.message;
+  }
+
+  // Refresh roster in case data changed
+  loadRoster();
+});
+
+// Quick-action buttons
+document.querySelectorAll('.quick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('req-method').value = btn.dataset.method;
+    document.getElementById('req-url').value = btn.dataset.url;
+    document.getElementById('req-body').value = btn.dataset.body || '';
+    buildCurl();
+    document.getElementById('send-btn').click();
+  });
+});
+
+// ---- Init ----------------------------------------------------------------
+loadGroupFilter().then(loadRoster);
+
+// Load groups when that tab is first clicked
+let groupsLoaded = false;
+document.querySelector('[data-panel="groups"]').addEventListener('click', () => {
+  if (!groupsLoaded) { loadGroups(); groupsLoaded = true; }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "csc394-api-demo",
+  "version": "1.0.0",
+  "description": "CSC 394 Week 3 — REST API Demo: Class Roster & Groups",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "jest --verbose --forceExit",
+    "test:watch": "jest --watch --verbose --forceExit",
+    "lint": "eslint src/ tests/",
+    "format": "prettier --write \"src/**/*.js\" \"tests/**/*.js\""
+  },
+  "keywords": ["api", "rest", "express", "demo", "csc394"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.0"
+  }
+}
